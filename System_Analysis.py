@@ -163,15 +163,17 @@ class Graficos:
         ax.set_title("Estado por Fabricante"); ax.set_ylabel("# Vuelos")
         st.pyplot(fig)
 
-    # Guardar PDF con descarga directa
+    # Guardar PDF con descarga directa – SOLO ESTE MÉTODO SE TOCA
     def guardar_pdf(self, nombre):
         buf = io.BytesIO()
         with PdfPages(buf) as pdf:
+            # Tabla de datos
             fig, ax = plt.subplots(figsize=(12, len(self.df)*0.25+1))
             ax.axis('off')
             tbl = ax.table(cellText=self.df.values, colLabels=self.df.columns, loc='center')
             tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1,1.2)
             pdf.savefig(fig); plt.close(fig)
+            # Gráficos existentes
             for func in [self.barras_estado, self.pie_fab, self.scatter_prog_real, self.hist_revision, lambda: self.barras_dest(15), self.heatmap_horas, self.barras_apiladas]:
                 fig, ax = plt.subplots()
                 func()
@@ -211,7 +213,6 @@ if st.session_state.vuelos_generados:
         if nombre:
             g.guardar_pdf(nombre)
     else:
-        # resto de opciones
         if op_graf == "Gráfico de barras": g.barras_estado()
         elif op_graf == "Gráfico de dispersión": g.scatter_prog_real()
         elif op_graf == "Gráfico de pastel": g.pie_fab()
