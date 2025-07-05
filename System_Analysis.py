@@ -69,7 +69,7 @@ class GestorV:
         usadas = set()
         while True:
             hora += timedelta(minutes=random.randint(2,8))
-            if hora > datetime.strptime("23:59","%H:%M"):
+            if hora > datetime.strptime("23:59", def_fmt):
                 break
             h_prog = hora.strftime(def_fmt)
             rev = self._seleccion_rev()
@@ -144,8 +144,7 @@ class Graficos:
         fig, ax = plt.subplots()
         data = self.df['Destino'].value_counts().head(top).sort_values()
         data.plot.barh(ax=ax)
-        for i, v in enumerate(data.values):
-            ax.text(v + 0.5, i, str(v), va='center')
+        for i, v in enumerate(data.values): ax.text(v + 0.5, i, str(v), va='center')
         ax.set_title(f"Top {top} Vuelos por Destino"); ax.set_xlabel("# Vuelos")
         st.pyplot(fig)
 
@@ -161,8 +160,7 @@ class Graficos:
         fig, ax = plt.subplots()
         ct = pd.crosstab(self.df['Fabricante'], self.df['Est. Vuelo'])
         ct.plot.bar(stacked=True, ax=ax)
-        for c in ax.containers:
-            ax.bar_label(c, label_type='center')
+        for c in ax.containers: ax.bar_label(c, label_type='center')
         ax.set_title("Estado por Fabricante"); ax.set_ylabel("# Vuelos")
         st.pyplot(fig)
 
@@ -200,7 +198,7 @@ class Graficos:
         else:
             st.write(f"Modas de horas de revisión (vuelos demorados): {', '.join(str(m) for m in modes)}")
 
-    # MODIFICADO: descarga directa con st.download_button
+    # SOLO SE MODIFICA ESTE MÉTODO PARA DESCARGA EN PDF
     def guardar_pdf(self, nombre):
         buf = io.BytesIO()
         with PdfPages(buf) as pdf:
@@ -210,18 +208,13 @@ class Graficos:
             tbl = ax.table(cellText=self.df.values, colLabels=self.df.columns, loc='center')
             tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1,1.2)
             pdf.savefig(fig); plt.close(fig)
-            # Gráficos
+            # Demás gráficos
             for func in [self.barras_estado, self.pie_fab, self.scatter_prog_real, self.hist_revision, lambda: self.barras_dest(15), self.heatmap_horas, self.barras_apiladas]:
                 fig, ax = plt.subplots()
                 func()
                 pdf.savefig(fig); plt.close(fig)
         buf.seek(0)
-        st.download_button(
-            label="Descargar PDF",
-            data=buf.getvalue(),
-            file_name=f"{nombre}.pdf",
-            mime="application/pdf"
-        )
+        st.download_button(label="Descargar PDF", data=buf.getvalue(), file_name=f"{nombre}.pdf", mime="application/pdf")
 
 # --- APLICACIÓN PRINCIPAL ---
 if 'gestor' not in st.session_state:
@@ -231,14 +224,10 @@ if 'gestor' not in st.session_state:
 op_datos = st.sidebar.radio("Opciones", ["Generar vuelos", "Cargar Excel"])
 
 if op_datos == "Generar vuelos":
-    if st.sidebar.button("Generar"):
-        st.session_state.gestor.generar()
-        st.session_state.vuelos_generados = True
+    if st.sidebar.button("Generar"): st.session_state.gestor.generar(); st.session_state.vuelos_generados = True
 elif op_datos == "Cargar Excel":
     archivo = st.sidebar.file_uploader("Excel (sin .xlsx)", type=["xlsx"])
-    if archivo:
-        st.session_state.gestor.cargar_excel(archivo)
-        st.session_state.vuelos_generados = True
+    if archivo: st.session_state.gestor.cargar_excel(archivo); st.session_state.vuelos_generados = True
 
 if st.session_state.vuelos_generados:
     df = st.session_state.gestor.obtener_df()
