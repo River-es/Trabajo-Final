@@ -166,6 +166,16 @@ class Graficos:
         })
         st.table(tabla)
 
+    def mostrar_todos(self):
+        self.barras_estado()
+        self.pie_fab()
+        self.scatter_prog_real()
+        self.hist_revision()
+        self.barras_dest(15)
+        self.heatmap_horas()
+        self.barras_apiladas()
+        self.medidas_tendencia()
+
     def guardar_pdf(self, nombre):
         path = os.path.join(os.getcwd(), f"{nombre}.pdf")
         with PdfPages(path) as pdf:
@@ -175,21 +185,29 @@ class Graficos:
             tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1,1.2)
             pdf.savefig(fig); plt.close(fig)
             for func in [self.barras_estado, self.pie_fab, self.scatter_prog_real, self.hist_revision, lambda: self.barras_dest(15), self.heatmap_horas, self.barras_apiladas]:
-                fig = func(); pdf.savefig(fig); plt.close(fig)
-        st.success(f"✅ PDF guardado: {path}")
+                func()
+                plt.close()
+        st.success("El PDF se descargó satisfactoriamente.")
 
 # --- APLICACIÓN PRINCIPAL ---
-gestor = GestorV()
+if 'gestor' not in st.session_state:
+    st.session_state.gestor = GestorV()
+    st.session_state.vuelos_generados = False
+
 op_datos = st.sidebar.radio("Opciones", ["Generar vuelos", "Cargar Excel"])
+
 if op_datos == "Generar vuelos":
-    gestor.generar()
-else:
+    if st.sidebar.button("Generar"):
+        st.session_state.gestor.generar()
+        st.session_state.vuelos_generados = True
+elif op_datos == "Cargar Excel":
     archivo = st.sidebar.file_uploader("Excel (sin .xlsx)", type=["xlsx"])
     if archivo:
-        gestor.cargar_excel(archivo)
+        st.session_state.gestor.cargar_excel(archivo)
+        st.session_state.vuelos_generados = True
 
-if gestor.vuelos:
-    df = gestor.obtener_df()
+if st.session_state.vuelos_generados:
+    df = st.session_state.gestor.obtener_df()
     st.subheader("📋 Tabla de vuelos")
     st.dataframe(df, use_container_width=True)
     st.markdown("---")
