@@ -1,4 +1,3 @@
-# Adaptación del sistema a Streamlit para despliegue web con opciones detalladas 
 import random
 from datetime import datetime, timedelta
 import pandas as pd
@@ -8,10 +7,14 @@ import streamlit as st
 from matplotlib.backends.backend_pdf import PdfPages
 import os
 import tempfile
+import io
 
+# Configuración de página
 st.set_page_config(page_title="Sistema de Análisis de Vuelos", layout="wide")
 st.title("🌍 Sistema de Análisis de Vuelos Internacionales")
 
+# Modelo de vuelo
+def_fmt = "%H:%M"
 class Vuelo:
     def __init__(self, aer, dst, hora_prog, rev):
         self.aer = aer
@@ -23,7 +26,7 @@ class Vuelo:
         self.hora_real = self._calc_nueva()
 
     def _fmt_hora(self, hora_str):
-        return datetime.strptime(hora_str, "%H:%M").strftime("%H:%M")
+        return datetime.strptime(hora_str, def_fmt).strftime(def_fmt)
 
     def _calc_estado(self):
         if self.rev == 0:
@@ -36,8 +39,8 @@ class Vuelo:
     def _calc_nueva(self):
         if self.rev > 2:
             return ""
-        t = datetime.strptime(self.hora_prog, "%H:%M") + timedelta(hours=self.rev)
-        return t.strftime("%H:%M")
+        t = datetime.strptime(self.hora_prog, def_fmt) + timedelta(hours=self.rev)
+        return t.strftime(def_fmt)
 
     def to_dict(self):
         return {
@@ -51,6 +54,8 @@ class Vuelo:
             'Nueva H.': self.hora_real
         }
 
+# Gestor de vuelos
+enum_fmt = "%H:%M"
 class GestorV:
     AEROLIST = ['Copa Airlines','Latam Airlines','Avianca','Argentina Airlines','Aeromexico','Delta','United Airlines','American Airlines','Air Canada','Air France','KLM','Iberia Airlines','Sky Airlines']
     DESTS = ['España','Francia','Países Bajos','Turquía','Uruguay','Ecuador','Colombia','Chile','Brasil','Bolivia','Argentina','El Salvador','Panamá','Cuba','México','Estados Unidos','Canadá','Costa Rica']
@@ -61,15 +66,15 @@ class GestorV:
 
     def generar(self):
         self.vuelos.clear()
-        hora = datetime.strptime("00:00", "%H:%M")
+        hora = datetime.strptime("00:00", def_fmt)
         usadas = set()
         while True:
             hora += timedelta(minutes=random.randint(2,8))
-            if hora > datetime.strptime("23:59","%H:%M"):
+            if hora > datetime.strptime("23:59", def_fmt):
                 break
-            h_prog = hora.strftime("%H:%M")
+            h_prog = hora.strftime(def_fmt)
             rev = self._seleccion_rev()
-            h_real = (hora + timedelta(hours=rev)).strftime("%H:%M") if rev <=2 else ""
+            h_real = (hora + timedelta(hours=rev)).strftime(def_fmt) if rev <=2 else ""
             if h_prog not in usadas and (not h_real or h_real not in usadas):
                 vuelo = Vuelo(random.choice(self.AEROLIST), random.choice(self.DESTS), h_prog, rev)
                 self.vuelos.append(vuelo)
@@ -95,6 +100,7 @@ class GestorV:
     def obtener_df(self):
         return pd.DataFrame([v.to_dict() for v in self.vuelos])
 
+# Generador de gráficos y análisis
 class Graficos:
     def __init__(self, df):
         self.df = df
@@ -121,8 +127,8 @@ class Graficos:
             st.info("No hay vuelos demorados para graficar scatter.")
             return
         fig, ax = plt.subplots()
-        tp = pd.to_datetime(df_d['H. Prog'], format="%H:%M")
-        tr = pd.to_datetime(df_d['Nueva H.'], format="%H:%M")
+        tp = pd.to_datetime(df_d['H. Prog'], format=def_fmt)
+        tr = pd.to_datetime(df_d['Nueva H.'], format=def_fmt)
         ax.scatter(tp.dt.hour + tp.dt.minute/60, tr.dt.hour + tr.dt.minute/60)
         ax.plot([0,24],[0,24],'k--'); ax.set_xlim(0,24); ax.set_ylim(0,24)
         ax.set_title("Prog vs Real (Demorados)"); ax.set_xlabel("Hora Programada"); ax.set_ylabel("Hora Real")
@@ -147,7 +153,7 @@ class Graficos:
 
     def heatmap_horas(self):
         fig, ax = plt.subplots()
-        horas = pd.to_datetime(self.df['H. Prog'], format="%H:%M").dt.hour
+        horas = pd.to_datetime(self.df['H. Prog'], format=def_fmt).dt.hour
         mat = horas.value_counts().reindex(range(24), fill_value=0).to_frame('Cantidad')
         sns.heatmap(mat.T, annot=True, fmt="d", cbar=False, ax=ax)
         ax.set_title("Vuelos por Hora")
@@ -162,37 +168,61 @@ class Graficos:
         ax.set_title("Estado por Fabricante"); ax.set_ylabel("# Vuelos")
         st.pyplot(fig)
 
+    # Nuevo método para medidas de tendencia central
+    def medidas_tendencia(self):
+        st.markdown("### Medidas de tendencia central")
+        df_d = self.df[self.df['Est. Vuelo']=='Demorado']
+        if df_d.empty:
+            st.info("No hay vuelos demorados para calcular medidas de tendencia central.")
+            return
+        rev = df_d['Rev (h)']
+        mean = rev.mean()
+        median = rev.median()
+        modes = rev.mode().tolist()
+        st.write(f"Media de horas de revisión (vuelos demorados): {mean:.2f}")
+        st.write(f"Mediana de horas de revisión (vuelos demorados): {median}")
+        if len(modes) == 1:
+            st.write(f"Moda de horas de revisión (vuelos demorados): {modes[0]}")
+        else:
+            st.write(f"Modas de horas de revisión (vuelos demorados): {', '.join(str(m) for m in modes)}")
+
+    # Ajuste en el layout del dashboard
     def mostrar_todos(self):
         st.markdown("### 📊 Análisis visual")
-        col1, col2 = st.columns(2)
-        with col1:
+        cols = st.columns(2)
+        with cols[0]:
             self.barras_estado()
-        with col2:
+        with cols[1]:
             self.pie_fab()
-        with col1:
+        with cols[0]:
             self.scatter_prog_real()
-        with col2:
+        with cols[1]:
             self.hist_revision()
-        with col1:
+        with cols[0]:
             self.barras_dest(15)
-        with col2:
+        with cols[1]:
             self.heatmap_horas()
-        self.barras_apiladas()
+        with cols[0]:
+            self.barras_apiladas()
 
+    # Corrección para evitar el FileNotFoundError creando la carpeta Downloads
     def guardar_pdf(self, nombre):
         carpeta_descargas = os.path.join(os.path.expanduser('~'), 'Downloads')
+        os.makedirs(carpeta_descargas, exist_ok=True)
         path = os.path.join(carpeta_descargas, f"{nombre}.pdf")
         with PdfPages(path) as pdf:
+            # Tabla de datos
             fig, ax = plt.subplots(figsize=(12, len(self.df)*0.25+1))
             ax.axis('off')
             tbl = ax.table(cellText=self.df.values, colLabels=self.df.columns, loc='center')
             tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1,1.2)
             pdf.savefig(fig); plt.close(fig)
+            # Gráficos
             for func in [self.barras_estado, self.pie_fab, self.scatter_prog_real, self.hist_revision, lambda: self.barras_dest(15), self.heatmap_horas, self.barras_apiladas]:
                 fig, ax = plt.subplots()
                 func()
                 pdf.savefig(fig); plt.close(fig)
-        st.success("El PDF se descargó satisfactoriamente.")
+        st.success("El PDF se guardó en la carpeta Descargas de su sistema.")
 
 # --- APLICACIÓN PRINCIPAL ---
 if 'gestor' not in st.session_state:
