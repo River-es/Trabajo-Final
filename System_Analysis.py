@@ -194,12 +194,25 @@ class Graficos:
 
     def medidas_tendencia(self):
         st.markdown("### Medidas de tendencia central")
-        df_d = self.df[self.df['Est. Vuelo']=='Demorado']
+        df_d = self.df[self.df['Est. Vuelo'] == 'Demorado']
         if df_d.empty:
             st.info("No hay vuelos demorados para calcular medidas de tendencia central.")
             return
+
         rev = df_d['Rev (h)']
-        st.write(f"Media: {rev.mean():.2f}, Mediana: {rev.median()}, Moda(s): {', '.join(map(str, rev.mode()))}")
+        media = f"{rev.mean():.1f} horas"
+        mediana = f"{rev.median():.1f} horas"
+        modas = rev.mode().tolist()
+        moda = f"{modas[0]:.1f} horas" if len(modas) == 1 else ', '.join(f"{m:.1f} horas" for m in modas)
+        maximo = f"{rev.max():.1f} horas"
+        minimo = f"{rev.min():.1f} horas"
+
+        tabla = pd.DataFrame({
+            "Métrica": ["Media", "Mediana", "Moda", "Máxima demora", "Mínima demora"],
+            "Tiempo de demora": [media, mediana, moda, maximo, minimo]
+        })
+
+        st.table(tabla)
 
     def mostrar_todos(self):
         st.markdown("### 📊 Análisis visual")
