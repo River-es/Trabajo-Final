@@ -95,123 +95,55 @@ class GestorV:
     def obtener_df(self):
         return pd.DataFrame([v.to_dict() for v in self.vuelos])
 
-class Graficos:
-    def __init__(self, df):
-        self.df = df
+# --- Controlador de datos persistentes en sesión ---
+if 'gestor' not in st.session_state:
+    st.session_state['gestor'] = GestorV()
 
-    def barras_estado(self):
-        fig, ax = plt.subplots()
-        counts = self.df['Est. Vuelo'].value_counts()
-        sns.barplot(x=counts.index, y=counts.values, ax=ax)
-        for i, v in enumerate(counts.values):
-            ax.text(i, v + 0.5, str(v), ha='center')
-        ax.set_title("Vuelos por Estado"); ax.set_ylabel("# Vuelos"); ax.set_xlabel("Estado")
-        st.pyplot(fig)
+if 'df' not in st.session_state:
+    st.session_state['df'] = pd.DataFrame()
 
-    def pie_fab(self):
-        fig, ax = plt.subplots()
-        self.df['Fabricante'].value_counts().plot.pie(autopct="%1.1f%%", ax=ax, startangle=90)
-        ax.set_ylabel("")
-        ax.set_title("% Vuelos por Fabricante")
-        st.pyplot(fig)
+opcion = st.sidebar.radio("Opciones", [
+    "Generar vuelos", "Cargar Excel",
+    "Gráfico de barras", "Gráfico de dispersión", "Gráfico de pastel", "Gráfico de barras horizontales",
+    "Histograma", "Mapa de calor", "Gráfico de columnas apiladas",
+    "Medidas de tendencia central", "Dashboard", "Descargar análisis en PDF"
+])
 
-    def scatter_prog_real(self):
-        df_d = self.df[self.df['Est. Vuelo']=='Demorado']
-        if df_d.empty:
-            st.info("No hay vuelos demorados para graficar scatter.")
-            return
-        fig, ax = plt.subplots()
-        tp = pd.to_datetime(df_d['H. Prog'], format="%H:%M")
-        tr = pd.to_datetime(df_d['Nueva H.'], format="%H:%M")
-        ax.scatter(tp.dt.hour + tp.dt.minute/60, tr.dt.hour + tr.dt.minute/60)
-        ax.plot([0,24],[0,24],'k--'); ax.set_xlim(0,24); ax.set_ylim(0,24)
-        ax.set_title("Prog vs Real (Demorados)"); ax.set_xlabel("Hora Programada"); ax.set_ylabel("Hora Real")
-        st.pyplot(fig)
+if opcion == "Generar vuelos":
+    if st.button("Generar"):
+        st.session_state['gestor'].generar()
+        st.session_state['df'] = st.session_state['gestor'].obtener_df()
 
-    def hist_revision(self):
-        fig, ax = plt.subplots()
-        ax.hist(self.df['Rev (h)'], bins=[0,1,2,3], edgecolor='black')
-        ax.set_title("Distribución Revisiones"); ax.set_xlabel("Horas de revisión"); ax.set_ylabel("# Vuelos")
-        st.pyplot(fig)
+elif opcion == "Cargar Excel":
+    archivo = st.file_uploader("Selecciona el archivo Excel", type=[".xlsx"])
+    if archivo:
+        st.session_state['gestor'].cargar_excel(archivo)
+        st.session_state['df'] = st.session_state['gestor'].obtener_df()
 
-    def barras_dest(self, top=15):
-        fig, ax = plt.subplots()
-        data = self.df['Destino'].value_counts().head(top).sort_values()
-        data.plot.barh(ax=ax)
-        for i, v in enumerate(data):
-            ax.text(v + 0.5, i, str(v), va='center')
-        ax.set_title(f"Top {top} Vuelos por Destino"); ax.set_xlabel("# Vuelos")
-        st.pyplot(fig)
-
-    def heatmap_horas(self):
-        fig, ax = plt.subplots()
-        horas = pd.to_datetime(self.df['H. Prog'], format="%H:%M").dt.hour
-        mat = horas.value_counts().reindex(range(24), fill_value=0).to_frame('Cantidad')
-        sns.heatmap(mat.T, annot=True, fmt="d", cbar=False, ax=ax)
-        ax.set_title("Vuelos por Hora")
-        st.pyplot(fig)
-
-    def barras_apiladas(self):
-        fig, ax = plt.subplots()
-        ct = pd.crosstab(self.df['Fabricante'], self.df['Est. Vuelo'])
-        ct.plot.bar(stacked=True, ax=ax)
-        for cont, val in enumerate(ct.values):
-            for i, v in enumerate(val):
-                if v > 0:
-                    ax.text(cont, sum(val[:i+1])-v/2, str(v), ha='center', va='center')
-        ax.set_title("Estado por Fabricante"); ax.set_ylabel("# Vuelos")
-        st.pyplot(fig)
-
-    def medidas_tendencia(self):
-        revs = self.df['Rev (h)'][self.df['Est. Vuelo'] == 'Demorado']
-        if revs.empty:
-            st.info("No hay vuelos demorados para calcular medidas de tendencia central.")
-            return
-        media = revs.mean(); mediana = revs.median(); moda = revs.mode().iloc[0] if not revs.mode().empty else 0
-        maxima = revs.max(); minima = revs.min()
-        tabla = pd.DataFrame({
-            'Métrica': ['Media','Mediana','Moda','Máxima demora','Mínima demora'],
-            'Valor': [f"{media:.1f} horas", f"{mediana:.1f} horas", f"{moda:.1f} horas", f"{maxima:.1f} horas", f"{minima:.1f} horas"]
-        })
-        st.table(tabla)
-
-    def mostrar_todos(self):
-        st.subheader("📊 Análisis visual")
-        col1, col2 = st.columns(2)
-        with col1:
-            self.barras_estado()
-            self.scatter_prog_real()
-            self.barras_dest(15)
-        with col2:
-            self.pie_fab()
-            self.hist_revision()
-            self.heatmap_horas()
-        self.barras_apiladas()
-
-    def guardar_pdf(self, nombre):
-        carpeta_descargas = os.path.join(os.path.expanduser('~'), 'Downloads')
-        path = os.path.join(carpeta_descargas, f"{nombre}.pdf")
-        with PdfPages(path) as pdf:
-            fig, ax = plt.subplots(figsize=(12, len(self.df)*0.25+1))
-            ax.axis('off')
-            tbl = ax.table(cellText=self.df.values, colLabels=self.df.columns, loc='center')
-            tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1,1.2)
-            pdf.savefig(fig); plt.close(fig)
-            for func in [self.barras_estado, self.pie_fab, self.scatter_prog_real, self.hist_revision, lambda: self.barras_dest(15), self.heatmap_horas, self.barras_apiladas]:
-                fig = plt.figure()
-                func()
-                pdf.savefig(fig); plt.close(fig)
-            revs = self.df['Rev (h)'][self.df['Est. Vuelo'] == 'Demorado']
-            if not revs.empty:
-                media = revs.mean(); mediana = revs.median(); moda = revs.mode().iloc[0] if not revs.mode().empty else 0
-                maxima = revs.max(); minima = revs.min()
-                tabla = pd.DataFrame({
-                    'Métrica': ['Media','Mediana','Moda','Máxima demora','Mínima demora'],
-                    'Valor': [f"{media:.1f} horas", f"{mediana:.1f} horas", f"{moda:.1f} horas", f"{maxima:.1f} horas", f"{minima:.1f} horas"]
-                })
-                fig, ax = plt.subplots()
-                ax.axis('off')
-                tbl = ax.table(cellText=tabla.values, colLabels=tabla.columns, loc='center')
-                tbl.auto_set_font_size(False); tbl.set_fontsize(10); tbl.scale(1, 1.2)
-                pdf.savefig(fig); plt.close(fig)
-        st.success("El PDF se descargó satisfactoriamente.")
+elif not st.session_state['df'].empty:
+    g = Graficos(st.session_state['df'])
+    if opcion == "Gráfico de barras":
+        g.barras_estado()
+    elif opcion == "Gráfico de dispersión":
+        g.scatter_prog_real()
+    elif opcion == "Gráfico de pastel":
+        g.pie_fab()
+    elif opcion == "Gráfico de barras horizontales":
+        top = st.radio("Top destinos", [5, 10, 15], horizontal=True)
+        g.barras_dest(top)
+    elif opcion == "Histograma":
+        g.hist_revision()
+    elif opcion == "Mapa de calor":
+        g.heatmap_horas()
+    elif opcion == "Gráfico de columnas apiladas":
+        g.barras_apiladas()
+    elif opcion == "Medidas de tendencia central":
+        g.medidas_tendencia()
+    elif opcion == "Dashboard":
+        g.mostrar_todos()
+    elif opcion == "Descargar análisis en PDF":
+        nombre = st.text_input("Nombre del PDF (sin extensión):")
+        if nombre:
+            g.guardar_pdf(nombre)
+else:
+    st.warning("No hay datos cargados o generados. Por favor, selecciona una opción válida.")
