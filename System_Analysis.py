@@ -190,7 +190,7 @@ class Graficos:
         else:
             st.write(f"Modas: {', '.join(str(m) for m in modes)}")
 
-    def generar_pdf_bytes(self):
+    def guardar_pdf(self, nombre):
         buf = io.BytesIO()
         with PdfPages(buf) as pdf:
             # Tabla de datos
@@ -210,7 +210,12 @@ class Graficos:
                 pdf.savefig(fig)
                 plt.close(fig)
         buf.seek(0)
-        return buf.getvalue()
+        st.download_button(
+            label="Descargar PDF",
+            data=buf.getvalue(),
+            file_name=f"{nombre}.pdf",
+            mime="application/pdf"
+        )
 
 # --- APLICACIÓN PRINCIPAL ---
 if 'gestor' not in st.session_state:
@@ -265,12 +270,6 @@ if st.session_state.vuelos_generados:
     elif op_graf == "Descargar análisis en PDF":
         nombre = st.text_input("Nombre del archivo PDF")
         if nombre:
-            pdf_bytes = g.generar_pdf_bytes()
-            st.download_button(
-                label="Descargar PDF",
-                data=pdf_bytes,
-                file_name=f"{nombre}.pdf",
-                mime="application/pdf"
-            )
+            g.guardar_pdf(nombre)
 else:
     st.warning("No hay datos disponibles. Genera o carga vuelos.")
