@@ -117,8 +117,7 @@ class Graficos:
     def pie_fab(self):
         fig, ax = plt.subplots()
         self.df['Fabricante'].value_counts().plot.pie(autopct="%1.1f%%", ax=ax, startangle=90)
-        ax.set_ylabel("")
-        ax.set_title("% Vuelos por Fabricante")
+        ax.set_ylabel(""); ax.set_title("% Vuelos por Fabricante")
         st.pyplot(fig)
 
     def scatter_prog_real(self):
@@ -146,8 +145,7 @@ class Graficos:
         fig, ax = plt.subplots()
         data = self.df['Destino'].value_counts().head(top).sort_values()
         data.plot.barh(ax=ax)
-        for i, v in enumerate(data.values):
-            ax.text(v + 0.5, i, str(v), va='center')
+        for i, v in enumerate(data.values): ax.text(v + 0.5, i, str(v), va='center')
         ax.set_title(f"Top {top} Vuelos por Destino"); ax.set_xlabel("# Vuelos")
         st.pyplot(fig)
 
@@ -155,62 +153,21 @@ class Graficos:
         fig, ax = plt.subplots()
         horas = pd.to_datetime(self.df['H. Prog'], format=def_fmt).dt.hour
         mat = horas.value_counts().reindex(range(24), fill_value=0).to_frame('Cantidad')
-        sns.heatmap(mat.T, annot=True, fmt="d", cbar=False, ax=ax)
-        ax.set_title("Vuelos por Hora")
+        sns.heatmap(mat.T, annot=True, fmt="d", cbar=False, ax=ax); ax.set_title("Vuelos por Hora")
         st.pyplot(fig)
 
     def barras_apiladas(self):
         fig, ax = plt.subplots()
         ct = pd.crosstab(self.df['Fabricante'], self.df['Est. Vuelo'])
         ct.plot.bar(stacked=True, ax=ax)
-        for c in ax.containers:
-            ax.bar_label(c, label_type='center')
+        for c in ax.containers: ax.bar_label(c, label_type='center')
         ax.set_title("Estado por Fabricante"); ax.set_ylabel("# Vuelos")
         st.pyplot(fig)
 
-    # Nuevo método para medidas de tendencia central
-    def medidas_tendencia(self):
-        st.markdown("### Medidas de tendencia central")
-        df_d = self.df[self.df['Est. Vuelo']=='Demorado']
-        if df_d.empty:
-            st.info("No hay vuelos demorados para calcular medidas de tendencia central.")
-            return
-        rev = df_d['Rev (h)']
-        mean = rev.mean()
-        median = rev.median()
-        modes = rev.mode().tolist()
-        st.write(f"Media de horas de revisión (vuelos demorados): {mean:.2f}")
-        st.write(f"Mediana de horas de revisión (vuelos demorados): {median}")
-        if len(modes) == 1:
-            st.write(f"Moda de horas de revisión (vuelos demorados): {modes[0]}")
-        else:
-            st.write(f"Modas de horas de revisión (vuelos demorados): {', '.join(str(m) for m in modes)}")
-
-    # Ajuste en el layout del dashboard
-    def mostrar_todos(self):
-        st.markdown("### 📊 Análisis visual")
-        cols = st.columns(2)
-        with cols[0]:
-            self.barras_estado()
-        with cols[1]:
-            self.pie_fab()
-        with cols[0]:
-            self.scatter_prog_real()
-        with cols[1]:
-            self.hist_revision()
-        with cols[0]:
-            self.barras_dest(15)
-        with cols[1]:
-            self.heatmap_horas()
-        with cols[0]:
-            self.barras_apiladas()
-
-    # Corrección para evitar el FileNotFoundError creando la carpeta Downloads
+    # Solo se modifica este método para usar st.download_button\    
     def guardar_pdf(self, nombre):
-        carpeta_descargas = os.path.join(os.path.expanduser('~'), 'Downloads')
-        os.makedirs(carpeta_descargas, exist_ok=True)
-        path = os.path.join(carpeta_descargas, f"{nombre}.pdf")
-        with PdfPages(path) as pdf:
+        buf = io.BytesIO()
+        with PdfPages(buf) as pdf:
             # Tabla de datos
             fig, ax = plt.subplots(figsize=(12, len(self.df)*0.25+1))
             ax.axis('off')
@@ -218,11 +175,18 @@ class Graficos:
             tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1,1.2)
             pdf.savefig(fig); plt.close(fig)
             # Gráficos
-            for func in [self.barras_estado, self.pie_fab, self.scatter_prog_real, self.hist_revision, lambda: self.barras_dest(15), self.heatmap_horas, self.barras_apiladas]:
+            for func in [self.barras_estado, self.pie_fab, self.scatter_prog_real,
+                         self.hist_revision, lambda: self.barras_dest(15), self.heatmap_horas, self.barras_apiladas]:
                 fig, ax = plt.subplots()
                 func()
                 pdf.savefig(fig); plt.close(fig)
-        st.success("El PDF se guardó en la carpeta Descargas de su sistema.")
+        buf.seek(0)
+        st.download_button(
+            label="Descargar PDF",
+            data=buf.getvalue(),
+            file_name=f"{nombre}.pdf",
+            mime="application/pdf"
+        )
 
 # --- APLICACIÓN PRINCIPAL ---
 if 'gestor' not in st.session_state:
@@ -232,14 +196,10 @@ if 'gestor' not in st.session_state:
 op_datos = st.sidebar.radio("Opciones", ["Generar vuelos", "Cargar Excel"])
 
 if op_datos == "Generar vuelos":
-    if st.sidebar.button("Generar"):
-        st.session_state.gestor.generar()
-        st.session_state.vuelos_generados = True
+    if st.sidebar.button("Generar"): st.session_state.gestor.generar(); st.session_state.vuelos_generados = True
 elif op_datos == "Cargar Excel":
     archivo = st.sidebar.file_uploader("Excel (sin .xlsx)", type=["xlsx"])
-    if archivo:
-        st.session_state.gestor.cargar_excel(archivo)
-        st.session_state.vuelos_generados = True
+    if archivo: st.session_state.gestor.cargar_excel(archivo); st.session_state.vuelos_generados = True
 
 if st.session_state.vuelos_generados:
     df = st.session_state.gestor.obtener_df()
@@ -249,9 +209,9 @@ if st.session_state.vuelos_generados:
     g = Graficos(df)
 
     opciones = [
-        "Gráfico de barras", "Gráfico de dispersión", "Gráfico de pastel", "Gráfico de barras horizontales",
-        "Histograma", "Mapa de calor", "Gráfico de columnas apiladas", "Medidas de tendencia central",
-        "Dashboard", "Descargar análisis en PDF"
+        "Gráfico de barras","Gráfico de dispersión","Gráfico de pastel","Gráfico de barras horizontales",
+        "Histograma","Mapa de calor","Gráfico de columnas apiladas","Medidas de tendencia central",
+        "Dashboard","Descargar análisis en PDF"
     ]
     op_graf = st.sidebar.radio("", opciones)
 
@@ -262,8 +222,7 @@ if st.session_state.vuelos_generados:
     elif op_graf == "Gráfico de pastel":
         g.pie_fab()
     elif op_graf == "Gráfico de barras horizontales":
-        top = st.sidebar.selectbox("Top destinos", [15,10,5])
-        g.barras_dest(top=top)
+        top = st.sidebar.selectbox("Top destinos", [15,10,5]); g.barras_dest(top=top)
     elif op_graf == "Histograma":
         g.hist_revision()
     elif op_graf == "Mapa de calor":
