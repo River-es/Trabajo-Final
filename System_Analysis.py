@@ -162,7 +162,7 @@ class Graficos:
         maxima = revs.max(); minima = revs.min()
         tabla = pd.DataFrame({
             'Métrica': ['Media','Mediana','Moda','Máxima demora','Mínima demora'],
-            'Valor': [f"{media:.1f} horas", f"{mediana:.1f} horas", f"{moda:.1f} horas", f"{maxima:.1f} horas", f"{minima:.1f} horas"]
+            'Tiempo de demora': [f"{media:.1f} horas", f"{mediana:.1f} horas", f"{moda:.1f} horas", f"{maxima:.1f} horas", f"{minima:.1f} horas"]
         })
         st.table(tabla)
 
