@@ -7,6 +7,7 @@ import seaborn as sns
 import streamlit as st
 from matplotlib.backends.backend_pdf import PdfPages
 import os
+import tempfile
 
 st.set_page_config(page_title="Sistema de Análisis de Vuelos", layout="wide")
 st.title("🌍 Sistema de Análisis de Vuelos Internacionales")
@@ -162,22 +163,30 @@ class Graficos:
         maxima = revs.max(); minima = revs.min()
         tabla = pd.DataFrame({
             'Métrica': ['Media','Mediana','Moda','Máxima demora','Mínima demora'],
-            'Tiempo de demora': [f"{media:.1f} horas", f"{mediana:.1f} horas", f"{moda:.1f} horas", f"{maxima:.1f} horas", f"{minima:.1f} horas"]
+            'Valor': [f"{media:.1f} horas", f"{mediana:.1f} horas", f"{moda:.1f} horas", f"{maxima:.1f} horas", f"{minima:.1f} horas"]
         })
         st.table(tabla)
 
     def mostrar_todos(self):
-        self.barras_estado()
-        self.pie_fab()
-        self.scatter_prog_real()
-        self.hist_revision()
-        self.barras_dest(15)
-        self.heatmap_horas()
+        col1, col2 = st.columns(2)
+        with col1:
+            self.barras_estado()
+        with col2:
+            self.pie_fab()
+        with col1:
+            self.scatter_prog_real()
+        with col2:
+            self.hist_revision()
+        with col1:
+            self.barras_dest(15)
+        with col2:
+            self.heatmap_horas()
         self.barras_apiladas()
         self.medidas_tendencia()
 
     def guardar_pdf(self, nombre):
-        path = os.path.join(os.getcwd(), f"{nombre}.pdf")
+        carpeta_descargas = os.path.join(os.path.expanduser('~'), 'Downloads')
+        path = os.path.join(carpeta_descargas, f"{nombre}.pdf")
         with PdfPages(path) as pdf:
             fig, ax = plt.subplots(figsize=(12, len(self.df)*0.25+1))
             ax.axis('off')
@@ -185,8 +194,9 @@ class Graficos:
             tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1,1.2)
             pdf.savefig(fig); plt.close(fig)
             for func in [self.barras_estado, self.pie_fab, self.scatter_prog_real, self.hist_revision, lambda: self.barras_dest(15), self.heatmap_horas, self.barras_apiladas]:
+                fig, ax = plt.subplots()
                 func()
-                plt.close()
+                pdf.savefig(fig); plt.close(fig)
         st.success("El PDF se descargó satisfactoriamente.")
 
 # --- APLICACIÓN PRINCIPAL ---
