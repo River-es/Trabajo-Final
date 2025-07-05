@@ -140,10 +140,23 @@ elif not st.session_state['df'].empty:
     elif opcion == "Medidas de tendencia central":
         g.medidas_tendencia()
     elif opcion == "Dashboard":
-        g.mostrar_todos()
+        st.markdown("## 📊 Análisis visual")
+        col1, col2 = st.columns(2)
+        with col1:
+            g.barras_estado()
+            g.hist_revision()
+            g.barras_apiladas()
+        with col2:
+            g.pie_fab()
+            g.scatter_prog_real()
+            g.heatmap_horas()
+        g.barras_dest(10)
     elif opcion == "Descargar análisis en PDF":
         nombre = st.text_input("Nombre del PDF (sin extensión):")
         if nombre:
-            g.guardar_pdf(nombre)
+            carpeta_descargas = os.path.join(os.path.expanduser('~'), 'Downloads')
+            path = os.path.join(carpeta_descargas, f"{nombre}.pdf")
+            g.guardar_pdf(path)
+            st.success("El PDF se descargó satisfactoriamente.")
 else:
     st.warning("No hay datos cargados o generados. Por favor, selecciona una opción válida.")
