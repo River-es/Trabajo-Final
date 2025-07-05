@@ -55,11 +55,10 @@ class Vuelo:
         }
 
 # Gestor de vuelos
-enum_fmt = "%H:%M"
 class GestorV:
-    AEROLIST = ['Copa Airlines','Latam Airlines','Avianca','Argentina Airlines','Aeromexico','Delta','United Airlines','American Airlines','Air Canada','Air France','KLM','Iberia Airlines','Sky Airlines']
-    DESTS = ['España','Francia','Países Bajos','Turquía','Uruguay','Ecuador','Colombia','Chile','Brasil','Bolivia','Argentina','El Salvador','Panamá','Cuba','México','Estados Unidos','Canadá','Costa Rica']
-    EUROPA = {'España','Francia','Países Bajos','Turquía'}
+    AEROLIST = ['Copa Airlines', 'Latam Airlines', 'Avianca', 'Argentina Airlines', 'Aeromexico', 'Delta', 'United Airlines', 'American Airlines', 'Air Canada', 'Air France', 'KLM', 'Iberia Airlines', 'Sky Airlines']
+    DESTS = ['España', 'Francia', 'Países Bajos', 'Turquía', 'Uruguay', 'Ecuador', 'Colombia', 'Chile', 'Brasil', 'Bolivia', 'Argentina', 'El Salvador', 'Panamá', 'Cuba', 'México', 'Estados Unidos', 'Canadá', 'Costa Rica']
+    EUROPA = {'España', 'Francia', 'Países Bajos', 'Turquía'}
 
     def __init__(self):
         self.vuelos = []
@@ -74,7 +73,7 @@ class GestorV:
                 break
             h_prog = hora.strftime(def_fmt)
             rev = self._seleccion_rev()
-            h_real = (hora + timedelta(hours=rev)).strftime(def_fmt) if rev <=2 else ""
+            h_real = (hora + timedelta(hours=rev)).strftime(def_fmt) if rev <= 2 else ""
             if h_prog not in usadas and (not h_real or h_real not in usadas):
                 vuelo = Vuelo(random.choice(self.AEROLIST), random.choice(self.DESTS), h_prog, rev)
                 self.vuelos.append(vuelo)
@@ -164,29 +163,21 @@ class Graficos:
         ax.set_title("Estado por Fabricante"); ax.set_ylabel("# Vuelos")
         st.pyplot(fig)
 
-    # Solo se modifica este método para usar st.download_button\    
+    # Guardar PDF con descarga directa
     def guardar_pdf(self, nombre):
         buf = io.BytesIO()
         with PdfPages(buf) as pdf:
-            # Tabla de datos
             fig, ax = plt.subplots(figsize=(12, len(self.df)*0.25+1))
             ax.axis('off')
             tbl = ax.table(cellText=self.df.values, colLabels=self.df.columns, loc='center')
             tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1,1.2)
             pdf.savefig(fig); plt.close(fig)
-            # Gráficos
-            for func in [self.barras_estado, self.pie_fab, self.scatter_prog_real,
-                         self.hist_revision, lambda: self.barras_dest(15), self.heatmap_horas, self.barras_apiladas]:
+            for func in [self.barras_estado, self.pie_fab, self.scatter_prog_real, self.hist_revision, lambda: self.barras_dest(15), self.heatmap_horas, self.barras_apiladas]:
                 fig, ax = plt.subplots()
                 func()
                 pdf.savefig(fig); plt.close(fig)
         buf.seek(0)
-        st.download_button(
-            label="Descargar PDF",
-            data=buf.getvalue(),
-            file_name=f"{nombre}.pdf",
-            mime="application/pdf"
-        )
+        st.download_button(label="Descargar PDF", data=buf.getvalue(), file_name=f"{nombre}.pdf", mime="application/pdf")
 
 # --- APLICACIÓN PRINCIPAL ---
 if 'gestor' not in st.session_state:
@@ -209,33 +200,26 @@ if st.session_state.vuelos_generados:
     g = Graficos(df)
 
     opciones = [
-        "Gráfico de barras","Gráfico de dispersión","Gráfico de pastel","Gráfico de barras horizontales",
-        "Histograma","Mapa de calor","Gráfico de columnas apiladas","Medidas de tendencia central",
-        "Dashboard","Descargar análisis en PDF"
+        "Gráfico de barras", "Gráfico de dispersión", "Gráfico de pastel", "Gráfico de barras horizontales",
+        "Histograma", "Mapa de calor", "Gráfico de columnas apiladas", "Medidas de tendencia central",
+        "Dashboard", "Descargar análisis en PDF"
     ]
     op_graf = st.sidebar.radio("", opciones)
 
-    if op_graf == "Gráfico de barras":
-        g.barras_estado()
-    elif op_graf == "Gráfico de dispersión":
-        g.scatter_prog_real()
-    elif op_graf == "Gráfico de pastel":
-        g.pie_fab()
-    elif op_graf == "Gráfico de barras horizontales":
-        top = st.sidebar.selectbox("Top destinos", [15,10,5]); g.barras_dest(top=top)
-    elif op_graf == "Histograma":
-        g.hist_revision()
-    elif op_graf == "Mapa de calor":
-        g.heatmap_horas()
-    elif op_graf == "Gráfico de columnas apiladas":
-        g.barras_apiladas()
-    elif op_graf == "Medidas de tendencia central":
-        g.medidas_tendencia()
-    elif op_graf == "Dashboard":
-        g.mostrar_todos()
-    elif op_graf == "Descargar análisis en PDF":
+    if op_graf == "Descargar análisis en PDF":
         nombre = st.text_input("Nombre del archivo PDF")
         if nombre:
             g.guardar_pdf(nombre)
+    else:
+        # resto de opciones
+        if op_graf == "Gráfico de barras": g.barras_estado()
+        elif op_graf == "Gráfico de dispersión": g.scatter_prog_real()
+        elif op_graf == "Gráfico de pastel": g.pie_fab()
+        elif op_graf == "Gráfico de barras horizontales": g.barras_dest(st.sidebar.selectbox("Top destinos", [15,10,5]))
+        elif op_graf == "Histograma": g.hist_revision()
+        elif op_graf == "Mapa de calor": g.heatmap_horas()
+        elif op_graf == "Gráfico de columnas apiladas": g.barras_apiladas()
+        elif op_graf == "Medidas de tendencia central": g.medidas_tendencia()
+        elif op_graf == "Dashboard": g.mostrar_todos()
 else:
     st.warning("No hay datos disponibles. Genera o carga vuelos.")
