@@ -224,12 +224,12 @@ elif not st.session_state['df'].empty:
         with col1:
             g.barras_estado()
             g.hist_revision()
+            g.barras_dest(10)
             g.barras_apiladas()
         with col2:
             g.pie_fab()
             g.scatter_prog_real()
             g.heatmap_horas()
-        g.barras_dest(10)
     elif opcion == "Descargar análisis en PDF":
         nombre = st.text_input("Nombre del PDF (sin extensión):")
         if nombre:
