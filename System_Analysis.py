@@ -213,21 +213,31 @@ class Graficos:
         with cols[0]: self.barras_apiladas()
 
     def guardar_pdf(self, nombre):
-        carpeta_descargas = os.path.join(os.path.expanduser('~'), 'Downloads')
-        os.makedirs(carpeta_descargas, exist_ok=True)
-        path = os.path.join(carpeta_descargas, f"{nombre}.pdf")
-        with PdfPages(path) as pdf:
+        import io
+        buffer = io.BytesIO()
+        with PdfPages(buffer) as pdf:
+            # Tabla de datos
             fig, ax = plt.subplots(figsize=(12, len(self.df)*0.25+1))
             ax.axis('off')
             tbl = ax.table(cellText=self.df.values, colLabels=self.df.columns, loc='center')
             tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1,1.2)
             pdf.savefig(fig); plt.close(fig)
 
-            for func in [self._barras_estado_fig, self._pie_fab_fig, self._scatter_prog_real_fig, self._hist_revision_fig, lambda: self._barras_dest_fig(15), self._heatmap_horas_fig, self._barras_apiladas_fig]:
+            for func in [self._barras_estado_fig, self._pie_fab_fig, self._scatter_prog_real_fig,
+                         self._hist_revision_fig, lambda: self._barras_dest_fig(15),
+                         self._heatmap_horas_fig, self._barras_apiladas_fig]:
                 fig, ax = func()
-                if fig: pdf.savefig(fig); plt.close(fig)
+                if fig:
+                    pdf.savefig(fig)
+                    plt.close(fig)
 
-        st.success(f"El PDF se guardó en la carpeta Descargas con el nombre: {nombre}.pdf")
+        buffer.seek(0)
+        st.download_button(
+            label="📥 Descargar PDF",
+            data=buffer,
+            file_name=f"{nombre}.pdf",
+            mime="application/pdf"
+        )
 
 # --- APLICACIÓN PRINCIPAL ---
 if 'gestor' not in st.session_state:
@@ -272,7 +282,7 @@ if st.session_state.vuelos_generados:
     elif op_graf == "Medidas de tendencia central": g.medidas_tendencia()
     elif op_graf == "Dashboard": g.mostrar_todos()
     elif op_graf == "Descargar análisis en PDF":
-        nombre = st.text_input("Nombre del archivo PDF")
+        nombre = st.text_input("Nombre del archivo PDF", value="analisis_vuelos")
         if nombre:
             g.guardar_pdf(nombre)
 else:
