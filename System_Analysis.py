@@ -266,7 +266,7 @@ class Graficos:
             pdf.savefig(fig); plt.close(fig)
             # Agrega al PDF todos los gráficos, incluida la tabla de medidas de tendencia central
             for func in [self._barras_estado_fig, self._pie_fab_fig, self._scatter_prog_real_fig,
-                         self._hist_revision_fig, lambda: self._barras_dest_fig(st.session_state.get("top_destinos", 15)),
+                         self._hist_revision_fig, lambda: self._barras_dest_fig(st.session_state.get("top_destinos")),
                          self._heatmap_horas_fig, self._barras_apiladas_fig, self._tabla_medidas_fig]:
                 fig, ax = func()
                 if fig:
@@ -299,6 +299,10 @@ elif op_datos == "Cargar Excel":
         st.session_state.vuelos_generados = True
 
 if st.session_state.vuelos_generados:
+    # Inicializa top_destinos si no existe, para uso en PDF
+    if "top_destinos" not in st.session_state:
+        st.session_state["top_destinos"] = 15
+    
     df = st.session_state.gestor.obtener_df()
     st.subheader("📋 Tabla de vuelos")
     st.dataframe(df, use_container_width=True)
