@@ -327,11 +327,32 @@ if st.session_state.vuelos_generados:
             st.session_state["top_destinos"] = 15
         else:
             st.session_state.top_destinos = st.session_state.top_destinos
-            
         nombre = st.text_input("Nombre del archivo PDF", value="analisis_vuelos")
-        
-        if nombre:
+        # Comprobamos si hay un cambio de nombre o si aún no se ha generado el PDF
+        if nombre and (st.session_state.get("nombre_pdf") != nombre or "pdf_buffer" not in st.session_state):
             with st.spinner("⏳ Generando PDF..."):
-                g.guardar_pdf(nombre)
+                buffer = io.BytesIO()
+                with PdfPages(buffer) as pdf:
+                    fig, ax = g._tabla_datos_fig()
+                    pdf.savefig(fig); plt.close(fig)
+                    for func in [g._barras_estado_fig, g._pie_fab_fig, g._scatter_prog_real_fig,
+                             g._hist_revision_fig, lambda: g._barras_dest_fig(st.session_state["top_destinos"]),
+                             g._heatmap_horas_fig, g._barras_apiladas_fig, g._tabla_medidas_fig]:
+                        fig, ax = func()
+                        if fig:
+                            pdf.savefig(fig)
+                            plt.close(fig)
+                buffer.seek(0)
+                st.session_state["pdf_buffer"] = buffer
+                st.session_state["nombre_pdf"] = nombre  # actualiza el nombre actual
+
+        # Mostrar botón de descarga
+        if "pdf_buffer" in st.session_state:
+            st.download_button(
+                label="📥 Descargar PDF",
+                data=st.session_state["pdf_buffer"],
+                file_name=f"{nombre}.pdf",
+                mime="application/pdf"
+            )
 else:
     st.warning("No hay datos disponibles. Genera o carga vuelos.")
