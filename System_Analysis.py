@@ -107,7 +107,7 @@ class Graficos:
         st.pyplot(fig)
 
     def _barras_estado_fig(self):
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(10, 6)) #Aumenta el tamaño de la hoja o figura
         counts = self.df['Est. Vuelo'].value_counts()
         sns.barplot(x=counts.index, y=counts.values, ax=ax)
         for i, v in enumerate(counts.values):
@@ -159,7 +159,7 @@ class Graficos:
         st.pyplot(fig)
 
     def _barras_dest_fig(self, top):
-        fig, ax = plt.subplots(figsize=(10, 6)) #Aumenta el tamaño de la hoja
+        fig, ax = plt.subplots(figsize=(11, 6)) 
         data = self.df['Destino'].value_counts().head(top).sort_values()
         data.plot.barh(ax=ax)
         for i, v in enumerate(data.values):
@@ -184,7 +184,7 @@ class Graficos:
         st.pyplot(fig)
 
     def _barras_apiladas_fig(self):
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(10, 7))
         ct = pd.crosstab(self.df['Fabricante'], self.df['Est. Vuelo'])
         ct.plot.bar(stacked=True, ax=ax)
         for c in ax.containers:
