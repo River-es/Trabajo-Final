@@ -265,7 +265,7 @@ class Graficos:
             pdf.savefig(fig); plt.close(fig)
             # Agrega al PDF todos los gráficos, incluida la tabla de medidas de tendencia central
             for func in [self._barras_estado_fig, self._pie_fab_fig, self._scatter_prog_real_fig,
-                         self._hist_revision_fig, lambda: self._barras_dest_fig(st.session_state.get("top_destinos")),
+                         self._hist_revision_fig, lambda: self._barras_dest_fig(st.session_state["top_destinos"]),
                          self._heatmap_horas_fig, self._barras_apiladas_fig, self._tabla_medidas_fig]:
                 fig, ax = func()
                 if fig:
