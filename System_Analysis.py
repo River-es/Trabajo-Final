@@ -6,6 +6,7 @@ import seaborn as sns
 import streamlit as st
 from matplotlib.backends.backend_pdf import PdfPages
 import os
+import io
 
 # Configuración de página
 st.set_page_config(page_title="Sistema de Análisis de Vuelos", layout="wide")
@@ -102,6 +103,13 @@ class Graficos:
     def __init__(self, df):
         self.df = df
 
+    def _tabla_datos_fig(self):
+        fig, ax = plt.subplots(figsize=(12, len(self.df)*0.25+1))
+        ax.axis('off')
+        tbl = ax.table(cellText=self.df.values, colLabels=self.df.columns, loc='center')
+        tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1, 1.2)
+        return fig, ax
+    
     def barras_estado(self):
         fig, ax = self._barras_estado_fig()
         st.pyplot(fig)
@@ -251,16 +259,12 @@ class Graficos:
         with cols[0]: self.barras_apiladas()
 
     def guardar_pdf(self, nombre):
-        import io
         buffer = io.BytesIO()
         with PdfPages(buffer) as pdf:
-            # Tabla de datos
-            fig, ax = plt.subplots(figsize=(12, len(self.df)*0.25+1))
-            ax.axis('off')
-            tbl = ax.table(cellText=self.df.values, colLabels=self.df.columns, loc='center')
-            tbl.auto_set_font_size(False); tbl.set_fontsize(6); tbl.scale(1,1.2)
+            # Agrega al PDF la tabla de datos
+            fig, ax = self._tabla_datos_fig()
             pdf.savefig(fig); plt.close(fig)
-
+            # Agrega al PDF todos los gráficos, incluida la tabla de medidas de tendencia central
             for func in [self._barras_estado_fig, self._pie_fab_fig, self._scatter_prog_real_fig,
                          self._hist_revision_fig, lambda: self._barras_dest_fig(st.session_state.get("top_destinos", 15)),
                          self._heatmap_horas_fig, self._barras_apiladas_fig, self._tabla_medidas_fig]:
