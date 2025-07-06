@@ -119,7 +119,7 @@ class Graficos:
         sns.barplot(x=counts.index, y=counts.values, ax=ax)
         for i, v in enumerate(counts.values):
             ax.text(i, v + 0.5, str(v), ha='center')
-        ax.set_title("Vuelos por Estado"); ax.set_ylabel("# Vuelos"); ax.set_xlabel("Estado")
+        ax.set_title("Vuelos por Estado"); ax.set_ylabel("Número de vuelos"); ax.set_xlabel("Estado de vuelo")
         return fig, ax
 
     def pie_fab(self):
@@ -129,7 +129,7 @@ class Graficos:
     def _pie_fab_fig(self):
         fig, ax = plt.subplots(figsize=(10, 6))
         self.df['Fabricante'].value_counts().plot.pie(autopct="%1.1f%%", ax=ax, startangle=90)
-        ax.set_ylabel(""); ax.set_title("% Vuelos por Fabricante")
+        ax.set_ylabel(""); ax.set_title("Porcentaje de Vuelos por Fabricante")
         return fig, ax
 
     def scatter_prog_real(self):
@@ -148,7 +148,7 @@ class Graficos:
         ax.plot([0,24],[0,24],'k--'); ax.set_xlim(0,24); ax.set_ylim(0,24)
         ax.set_xticks(range(0, 25, 3))  
         ax.set_yticks(range(0, 25, 3))  
-        ax.set_title("Prog vs Real (Demorados)"); ax.set_xlabel("Hora Programada"); ax.set_ylabel("Hora Real")
+        ax.set_title("Hora programada vs Hora real (Vuelos Demorados)"); ax.set_xlabel("Hora Programada"); ax.set_ylabel("Hora Real")
         return fig, ax
 
     def hist_revision(self):
@@ -160,7 +160,7 @@ class Graficos:
         n, bins, patches = ax.hist(self.df['Rev (h)'], bins=[0,1,2,3], edgecolor='black')
         for i in range(len(n)):
             ax.text((bins[i]+bins[i+1])/2, n[i]+0.2, str(int(n[i])), ha='center')
-        ax.set_title("Distribución Revisiones"); ax.set_xlabel("Horas de revisión"); ax.set_ylabel("# Vuelos")
+        ax.set_title("Distribución de Revisiones"); ax.set_xlabel("Horas de revisión"); ax.set_ylabel("Número de vuelos")
         return fig, ax
 
     def barras_dest(self, top=15):
@@ -173,7 +173,7 @@ class Graficos:
         data.plot.barh(ax=ax)
         for i, v in enumerate(data.values):
             ax.text(v + 0.5, i, str(v), va='center')
-        ax.set_title(f"Top {top} Vuelos por Destino"); ax.set_xlabel("# Vuelos")
+        ax.set_title(f"Top {top} de Vuelos por Destino"); ax.set_xlabel("Número de vuelos"); ax.set_ylabel("Destino")
         return fig, ax
 
     def heatmap_horas(self):
@@ -185,7 +185,7 @@ class Graficos:
         horas = pd.to_datetime(self.df['H. Prog'], format=def_fmt).dt.hour
         mat = horas.value_counts().reindex(range(24), fill_value=0).to_frame('Cantidad')
         sns.heatmap(mat.T, annot=True, fmt="d", cbar=False, ax=ax)
-        ax.set_title("Vuelos por Hora")
+        ax.set_title("Vuelos por Hora"); ax.set_ylabel("Hora programada")
         return fig, ax
 
     def barras_apiladas(self):
@@ -198,7 +198,7 @@ class Graficos:
         ct.plot.bar(stacked=True, ax=ax)
         for c in ax.containers:
             ax.bar_label(c, label_type='center')
-        ax.set_title("Estado por Fabricante"); ax.set_ylabel("# Vuelos")
+        ax.set_title("Estado por Fabricante"); ax.set_ylabel("Número de vuelos")
         return fig, ax
 
     def medidas_tendencia(self):
