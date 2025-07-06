@@ -146,8 +146,8 @@ class Graficos:
         tr = pd.to_datetime(df_d['Nueva H.'], format=def_fmt)
         ax.scatter(tp.dt.hour + tp.dt.minute/60, tr.dt.hour + tr.dt.minute/60)
         ax.plot([0,24],[0,24],'k--'); ax.set_xlim(0,24); ax.set_ylim(0,24)
-        ax.set_xticks(range(0, 25, 4))  
-        ax.set_yticks(range(0, 25, 4))  
+        ax.set_xticks(range(0, 25, 3))  
+        ax.set_yticks(range(0, 25, 3))  
         ax.set_title("Prog vs Real (Demorados)"); ax.set_xlabel("Hora Programada"); ax.set_ylabel("Hora Real")
         return fig, ax
 
