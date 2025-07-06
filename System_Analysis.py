@@ -185,7 +185,7 @@ class Graficos:
         horas = pd.to_datetime(self.df['H. Prog'], format=def_fmt).dt.hour
         mat = horas.value_counts().reindex(range(24), fill_value=0).to_frame('Cantidad')
         sns.heatmap(mat.T, annot=True, fmt="d", cbar=False, ax=ax)
-        ax.set_title("Vuelos por Hora"); ax.set_ylabel("Hora programada")
+        ax.set_title("Vuelos por Hora"); ax.set_xlabel("Hora programada")
         return fig, ax
 
     def barras_apiladas(self):
