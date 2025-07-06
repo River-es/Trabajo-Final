@@ -325,7 +325,11 @@ if st.session_state.vuelos_generados:
     elif op_graf == "Descargar análisis en PDF":
         if "top_destinos" not in st.session_state:
             st.session_state["top_destinos"] = 15
+        else:
+            st.session_state.top_destinos = st.session_state.top_destinos
+            
         nombre = st.text_input("Nombre del archivo PDF", value="analisis_vuelos")
+        
         if nombre:
             with st.spinner("⏳ Generando PDF..."):
                 g.guardar_pdf(nombre)
