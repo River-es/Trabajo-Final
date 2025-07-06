@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 from matplotlib.backends.backend_pdf import PdfPages
-import os
 import io
 
 # Configuración de página
@@ -299,10 +298,6 @@ elif op_datos == "Cargar Excel":
         st.session_state.vuelos_generados = True
 
 if st.session_state.vuelos_generados:
-    # Inicializa top_destinos si no existe, para uso en PDF
-    if "top_destinos" not in st.session_state:
-        st.session_state["top_destinos"] = 15
-    
     df = st.session_state.gestor.obtener_df()
     st.subheader("📋 Tabla de vuelos")
     st.dataframe(df, use_container_width=True)
@@ -328,6 +323,8 @@ if st.session_state.vuelos_generados:
     elif op_graf == "Medidas de tendencia central": g.medidas_tendencia()
     elif op_graf == "Dashboard": g.mostrar_todos()
     elif op_graf == "Descargar análisis en PDF":
+        # Este selectbox no se muestra pero actualiza el valor si el usuario nunca entró al gráfico de barras horizontales
+        _ = st.sidebar.selectbox("Top destinos", [15,10,5], key="top_destinos", label_visibility="collapsed")
         nombre = st.text_input("Nombre del archivo PDF", value="analisis_vuelos")
         if nombre:
             with st.spinner("⏳ Generando PDF..."):
