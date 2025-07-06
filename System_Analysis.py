@@ -159,7 +159,7 @@ class Graficos:
         st.pyplot(fig)
 
     def _barras_dest_fig(self, top):
-        fig, ax = plt.subplots(figsize=(12, 8)) #Aumenta el tamaño de la hoja
+        fig, ax = plt.subplots(figsize=(10, 6)) #Aumenta el tamaño de la hoja
         data = self.df['Destino'].value_counts().head(top).sort_values()
         data.plot.barh(ax=ax)
         for i, v in enumerate(data.values):
