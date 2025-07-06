@@ -148,7 +148,7 @@ class Graficos:
         ax.plot([0,24],[0,24],'k--'); ax.set_xlim(0,24); ax.set_ylim(0,24)
         ax.set_xticks(range(0, 25, 3))  
         ax.set_yticks(range(0, 25, 3))  
-        ax.set_title("Hora programada vs Hora real (Vuelos Demorados)"); ax.set_xlabel("Hora Programada"); ax.set_ylabel("Hora Real")
+        ax.set_title("Hora programada vs Hora real (Vuelos Demorados)"); ax.set_xlabel("Hora programada"); ax.set_ylabel("Hora real")
         return fig, ax
 
     def hist_revision(self):
