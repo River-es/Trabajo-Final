@@ -158,8 +158,8 @@ class Graficos:
         fig, ax = self._barras_dest_fig(top)
         st.pyplot(fig)
 
-    def _barras_dest_fig(self, top=15):
-        fig, ax = plt.subplots()
+    def _barras_dest_fig(self, top):
+        fig, ax = plt.subplots(figsize=(12, 8) #Aumenta el tamaño de la hoja
         data = self.df['Destino'].value_counts().head(top).sort_values()
         data.plot.barh(ax=ax)
         for i, v in enumerate(data.values):
@@ -193,7 +193,7 @@ class Graficos:
         return fig, ax
 
     def medidas_tendencia(self):
-        st.markdown("### Medidas de tendencia central")
+        st.markdown("### Medidas de tendencia central (vuelos demorados)")
         df_d = self.df[self.df['Est. Vuelo'] == 'Demorado']
         if df_d.empty:
             st.info("No hay vuelos demorados para calcular medidas de tendencia central.")
@@ -229,7 +229,7 @@ class Graficos:
 
         tabla = pd.DataFrame({
             "Métrica": ["Media", "Mediana", "Moda", "Máxima demora", "Mínima demora"],
-            "Valor": [media, mediana, moda, maximo, minimo]
+            "Tiempo de demora": [media, mediana, moda, maximo, minimo]
         })
 
         fig, ax = plt.subplots(figsize=(6, 2))
