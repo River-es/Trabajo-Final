@@ -107,7 +107,7 @@ class Graficos:
         st.pyplot(fig)
 
     def _barras_estado_fig(self):
-        fig, ax = plt.subplots(figsize=(9, 5))
+        fig, ax = plt.subplots(figsize=(10, 6))
         counts = self.df['Est. Vuelo'].value_counts()
         sns.barplot(x=counts.index, y=counts.values, ax=ax)
         for i, v in enumerate(counts.values):
@@ -120,7 +120,7 @@ class Graficos:
         st.pyplot(fig)
 
     def _pie_fab_fig(self):
-        fig, ax = plt.subplots(figsize=(9, 5))
+        fig, ax = plt.subplots(figsize=(10, 6))
         self.df['Fabricante'].value_counts().plot.pie(autopct="%1.1f%%", ax=ax, startangle=90)
         ax.set_ylabel(""); ax.set_title("% Vuelos por Fabricante")
         return fig, ax
@@ -134,7 +134,7 @@ class Graficos:
         df_d = self.df[self.df['Est. Vuelo']=='Demorado']
         if df_d.empty:
             return None, None
-        fig, ax = plt.subplots(figsize=(9, 5))
+        fig, ax = plt.subplots(figsize=(10, 6))
         tp = pd.to_datetime(df_d['H. Prog'], format=def_fmt)
         tr = pd.to_datetime(df_d['Nueva H.'], format=def_fmt)
         ax.scatter(tp.dt.hour + tp.dt.minute/60, tr.dt.hour + tr.dt.minute/60)
@@ -147,7 +147,7 @@ class Graficos:
         st.pyplot(fig)
 
     def _hist_revision_fig(self):
-        fig, ax = plt.subplots(figsize=(9, 5))
+        fig, ax = plt.subplots(figsize=(10, 6))
         n, bins, patches = ax.hist(self.df['Rev (h)'], bins=[0,1,2,3], edgecolor='black')
         for i in range(len(n)):
             ax.text((bins[i]+bins[i+1])/2, n[i]+0.2, str(int(n[i])), ha='center')
@@ -159,7 +159,7 @@ class Graficos:
         st.pyplot(fig)
 
     def _barras_dest_fig(self, top):
-        fig, ax = plt.subplots(figsize=(9, 5)) #Aumenta el tamaño de la hoja
+        fig, ax = plt.subplots(figsize=(10, 6)) #Aumenta el tamaño de la hoja
         data = self.df['Destino'].value_counts().head(top).sort_values()
         data.plot.barh(ax=ax)
         for i, v in enumerate(data.values):
@@ -172,7 +172,7 @@ class Graficos:
         st.pyplot(fig)
 
     def _heatmap_horas_fig(self):
-        fig, ax = plt.subplots(figsize=(9, 5))
+        fig, ax = plt.subplots(figsize=(10, 6))
         horas = pd.to_datetime(self.df['H. Prog'], format=def_fmt).dt.hour
         mat = horas.value_counts().reindex(range(24), fill_value=0).to_frame('Cantidad')
         sns.heatmap(mat.T, annot=True, fmt="d", cbar=False, ax=ax)
@@ -184,7 +184,7 @@ class Graficos:
         st.pyplot(fig)
 
     def _barras_apiladas_fig(self):
-        fig, ax = plt.subplots(figsize=(9, 5))
+        fig, ax = plt.subplots(figsize=(10, 6))
         ct = pd.crosstab(self.df['Fabricante'], self.df['Est. Vuelo'])
         ct.plot.bar(stacked=True, ax=ax)
         for c in ax.containers:
@@ -232,7 +232,7 @@ class Graficos:
             "Tiempo de demora": [media, mediana, moda, maximo, minimo]
         })
 
-        fig, ax = plt.subplots(figsize=(8, 4))
+        fig, ax = plt.subplots(figsize=(7, 3))
         ax.axis('off')
         tbl = ax.table(cellText=tabla.values, colLabels=tabla.columns, loc='center', cellLoc='center')
         tbl.auto_set_font_size(False); tbl.set_fontsize(10); tbl.scale(1, 1.5)
@@ -246,7 +246,7 @@ class Graficos:
         with cols[1]: self.pie_fab()
         with cols[0]: self.scatter_prog_real()
         with cols[1]: self.hist_revision()
-        with cols[0]: self.barras_dest(15)
+        with cols[0]: self.barras_dest() #Aquí se muestra siempre el top 15 en el dashboard
         with cols[1]: self.heatmap_horas()
         with cols[0]: self.barras_apiladas()
 
@@ -262,7 +262,7 @@ class Graficos:
             pdf.savefig(fig); plt.close(fig)
 
             for func in [self._barras_estado_fig, self._pie_fab_fig, self._scatter_prog_real_fig,
-                         self._hist_revision_fig, lambda: self._barras_dest_fig(15),
+                         self._hist_revision_fig, lambda: self._barras_dest_fig(st.session_state.get("top_destinos", 15)),
                          self._heatmap_horas_fig, self._barras_apiladas_fig, self._tabla_medidas_fig]:
                 fig, ax = func()
                 if fig:
@@ -289,7 +289,7 @@ if op_datos == "Generar vuelos":
         st.session_state.gestor.generar()
         st.session_state.vuelos_generados = True
 elif op_datos == "Cargar Excel":
-    archivo = st.sidebar.file_uploader("Excel (sin .xlsx)", type=["xlsx"])
+    archivo = st.sidebar.file_uploader("Excel (.xlsx)", type=["xlsx"])
     if archivo:
         st.session_state.gestor.cargar_excel(archivo)
         st.session_state.vuelos_generados = True
@@ -312,7 +312,7 @@ if st.session_state.vuelos_generados:
     elif op_graf == "Gráfico de dispersión": g.scatter_prog_real()
     elif op_graf == "Gráfico de pastel": g.pie_fab()
     elif op_graf == "Gráfico de barras horizontales":
-        top = st.sidebar.selectbox("Top destinos", [15,10,5])
+        top = st.sidebar.selectbox("Top destinos", [15,10,5], key="top_destinos")
         g.barras_dest(top=top)
     elif op_graf == "Histograma": g.hist_revision()
     elif op_graf == "Mapa de calor": g.heatmap_horas()
@@ -322,6 +322,7 @@ if st.session_state.vuelos_generados:
     elif op_graf == "Descargar análisis en PDF":
         nombre = st.text_input("Nombre del archivo PDF", value="analisis_vuelos")
         if nombre:
-            g.guardar_pdf(nombre)
+            with st.spinner("⏳ Generando PDF..."):
+                g.guardar_pdf(nombre)
 else:
     st.warning("No hay datos disponibles. Genera o carga vuelos.")
