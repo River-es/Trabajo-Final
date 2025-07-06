@@ -214,6 +214,31 @@ class Graficos:
 
         st.table(tabla)
 
+    def _tabla_medidas_fig(self):
+        df_d = self.df[self.df['Est. Vuelo'] == 'Demorado']
+        if df_d.empty:
+            return None, None
+
+        rev = df_d['Rev (h)']
+        media = f"{rev.mean():.1f} horas"
+        mediana = f"{rev.median():.1f} horas"
+        modas = rev.mode().tolist()
+        moda = f"{modas[0]:.1f} horas" if len(modas) == 1 else ', '.join(f"{m:.1f} horas" for m in modas)
+        maximo = f"{rev.max():.1f} horas"
+        minimo = f"{rev.min():.1f} horas"
+
+        tabla = pd.DataFrame({
+            "Métrica": ["Media", "Mediana", "Moda", "Máxima demora", "Mínima demora"],
+            "Valor": [media, mediana, moda, maximo, minimo]
+        })
+
+        fig, ax = plt.subplots(figsize=(6, 2))
+        ax.axis('off')
+        tbl = ax.table(cellText=tabla.values, colLabels=tabla.columns, loc='center', cellLoc='center')
+        tbl.auto_set_font_size(False); tbl.set_fontsize(10); tbl.scale(1, 1.5)
+        ax.set_title("Medidas de tendencia central (vuelos demorados)", fontweight='bold')
+        return fig, ax
+
     def mostrar_todos(self):
         st.markdown("### 📊 Análisis visual")
         cols = st.columns(2)
@@ -238,7 +263,7 @@ class Graficos:
 
             for func in [self._barras_estado_fig, self._pie_fab_fig, self._scatter_prog_real_fig,
                          self._hist_revision_fig, lambda: self._barras_dest_fig(15),
-                         self._heatmap_horas_fig, self._barras_apiladas_fig]:
+                         self._heatmap_horas_fig, self._barras_apiladas_fig, self._tabla_medidas_fig]:
                 fig, ax = func()
                 if fig:
                     pdf.savefig(fig)
